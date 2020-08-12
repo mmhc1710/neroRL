@@ -256,6 +256,14 @@ class PPOTrainer():
         """
         sampled_return = samples['values'] + samples['advantages']
         sampled_normalized_advantage = PPOTrainer._normalize(samples['advantages']).unsqueeze(1).repeat(1, len(self.action_space_shape))
+
+        # Split minibatch into sequences and check for bad sequences
+        # print(samples['dones'].size())
+        # split_obs = torch.transpose(torch.stack(torch.split(samples['vis_obs'], 8)), dim0=0, dim1=1)
+        # split_dones = torch.transpose(torch.stack(torch.split(samples['dones'], 8)), dim0=0, dim1=1)
+        # print(split_dones.size())
+        # assert False
+
         policy, value, _ = self.model(samples['vis_obs'] if self.vis_obs is not None else None,
                                     samples['vec_obs'] if self.vec_obs is not None else None,
                                     samples['hidden_states'] if self.use_recurrent else None,
@@ -294,6 +302,12 @@ class PPOTrainer():
             pg['lr'] = learning_rate
         self.optimizer.zero_grad()
         loss.backward()
+        # from torchviz import make_dot
+        # os.environ["PATH"] += os.pathsep + "C:/Program Files (x86)/Graphviz2.38/bin/"
+        # dot = make_dot(loss, params=dict(self.model.named_parameters()))
+        # dot.format = "pdf"
+        # dot.render()
+        # assert False
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5)
         self.optimizer.step()
 

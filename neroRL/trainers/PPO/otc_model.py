@@ -139,9 +139,20 @@ class OTCModel(nn.Module):
 
         # Forward reccurent layer (GRU) if available
         if self.use_recurrent:
-            h, hxs = self.gru(h.unsqueeze(0), hxs.unsqueeze(0))
-            h = h.squeeze(0)
-            hxs = hxs.squeeze(0)
+            # sequence length, batch size, data
+            # print(h.unsqueeze(0).size())
+            if h.size()[0] == 16:
+                h, hxs = self.gru(h.unsqueeze(0), hxs.unsqueeze(0))
+                h = h.squeeze(0)
+                hxs = hxs.squeeze(0)
+            else:
+                h_split = torch.transpose(torch.stack(torch.split(h, 8)), dim0=0, dim1=1)
+                hxs_split = torch.transpose(torch.stack(torch.split(hxs, 8)), dim0=0, dim1=1)
+                h, hxs = self.gru(h_split, hxs_split[0].unsqueeze(0).contiguous())
+                h = h.view(8*64, -1)
+                # print(h.size())
+                # print(hxs.size())
+                hxs = hxs.squeeze(0)
 
         # Feed hidden layer
         h = F.relu(self.lin_hidden(h))
